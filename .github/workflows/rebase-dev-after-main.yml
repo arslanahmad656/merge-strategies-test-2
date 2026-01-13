@@ -31,4 +31,4 @@ jobs:
 
       - name: Force push dev using admin token
         run: |
-          git push https://x-access-token:${{ secrets.DEV_REBASE_ADMIN_TOKEN }}@github.com/${{ github.repository }} dev --force-with-lease
+          git push https://x-access-token:${{ secrets.DEV_REBASE_ADMIN_TOKEN }}@github.com/${{ github.repository }} dev --force
