@@ -1,4 +1,4 @@
-name: Rebase dev onto main after PR merge
+name: Rebase dev onto main after PR merge (ADO style)
 
 on:
   pull_request:
@@ -12,15 +12,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository with admin token
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.DEV_REBASE_ADMIN_TOKEN }}
 
-      - name: Configure Git
+      - name: Configure Git identity
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "ado-rebase-bot"
+          git config user.email "ado-rebase-bot@users.noreply.github.com"
 
       - name: Rebase dev onto main
         run: |
@@ -28,6 +29,6 @@ jobs:
           git checkout dev
           git rebase origin/main
 
-      - name: Force push dev
+      - name: Force push dev using admin token
         run: |
-          git push origin dev --force-with-lease
+          git push https://x-access-token:${{ secrets.DEV_REBASE_ADMIN_TOKEN }}@github.com/${{ github.repository }} dev --force-with-lease
