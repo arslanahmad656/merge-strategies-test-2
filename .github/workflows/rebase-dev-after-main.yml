@@ -1,4 +1,4 @@
-name: Rebase dev onto main after PR merge
+name: Sync dev with main (ADO-style, PR-based)
 
 on:
   pull_request:
@@ -11,8 +11,12 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -23,12 +27,32 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # Phase 1: Rebase dev onto main
       - name: Rebase dev onto main
         run: |
           git fetch origin
           git checkout dev
           git rebase origin/main
 
-      - name: Force push dev
+      # Phase 2: Push to temporary sync branch
+      - name: Push to sync branch
         run: |
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} dev --force
+          git push origin HEAD:sync-dev-with-main --force
+
+      # Phase 3: Create PR into dev
+      - name: Create sync PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: dev
+          head: sync-dev-with-main
+          title: "Automated sync: Rebase dev onto main"
+          body: "This PR rebases dev onto main to keep history aligned (ADO-style fast-forward)."
+          branch: sync-dev-with-main
+
+      # Phase 4: Enable auto-merge with rebase
+      - name: Enable auto-merge (rebase)
+        run: |
+          gh pr merge sync-dev-with-main --rebase --auto
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
