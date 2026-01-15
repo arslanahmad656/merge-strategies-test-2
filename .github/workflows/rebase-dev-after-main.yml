@@ -39,20 +39,25 @@ jobs:
         run: |
           git push origin HEAD:sync-dev-with-main --force
 
-      # Phase 3: Create PR into dev
+      # Phase 3: Create PR and capture its number
       - name: Create sync PR
+        id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: dev
           head: sync-dev-with-main
           title: "Automated sync: Rebase dev onto main"
-          body: "This PR rebases dev onto main to keep history aligned (ADO-style fast-forward)."
+          body: "Automated ADO-style fast-forward of dev after rebase into main."
           branch: sync-dev-with-main
 
-      # Phase 4: Enable auto-merge with rebase
-      - name: Enable auto-merge (rebase)
+      # Phase 4: Enable auto-merge (rebase) and delete temp branch
+      - name: Auto-merge sync PR into dev
+        if: steps.cpr.outputs.pull-request-number != ''
         run: |
-          gh pr merge sync-dev-with-main --rebase --auto
+          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} \
+            --rebase \
+            --auto \
+            --delete-branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
