@@ -1,4 +1,4 @@
-name: Sync dev with main (ADO-style, PR-based)
+name: Sync dev with main (ADO-style, fully automated)
 
 on:
   pull_request:
@@ -39,25 +39,16 @@ jobs:
         run: |
           git push origin HEAD:sync-dev-with-main --force
 
-      # Phase 3: Create PR and capture its number
-      - name: Create sync PR
-        id: cpr
+      # Phase 3: Create PR, enable auto-merge (rebase), and delete branch
+      - name: Create and auto-merge sync PR
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: dev
           head: sync-dev-with-main
           title: "Automated sync: Rebase dev onto main"
-          body: "Automated ADO-style fast-forward of dev after rebase into main."
+          body: "ADO-style fast-forward of dev after rebase into main."
           branch: sync-dev-with-main
-
-      # Phase 4: Enable auto-merge (rebase) and delete temp branch
-      - name: Auto-merge sync PR into dev
-        if: steps.cpr.outputs.pull-request-number != ''
-        run: |
-          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} \
-            --rebase \
-            --auto \
-            --delete-branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          delete-branch: true
+          auto-merge: true
+          merge-method: rebase
